@@ -1,0 +1,24 @@
+# jenkins repo — already at github.com/chetnakhanna16/jenkins
+jenkins/
+
+# secrets
+.env
+.env.local
+
+# python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# output — regenerated on each run
+output/chroma_db/
+output/*.json
+output/pmd-*.xml
+
+# macos
+.DS_Store
+**/.DS_Store
+
+# screenshots / local notes
+Screenshots/
