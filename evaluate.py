@@ -59,7 +59,7 @@ GROUND_TRUTH = [
 
 JAVA_SRC = "core/src/main/java"
 FILE_MAP = {
-    "DependencyRunner.java": f"{JAVA_SRC}/jenkins/model/lazy/DependencyRunner.java",
+    "DependencyRunner.java": f"{JAVA_SRC}/hudson/DependencyRunner.java",
     "StructuredForm.java":   f"{JAVA_SRC}/hudson/StructuredForm.java",
     "Proc.java":             f"{JAVA_SRC}/hudson/Proc.java",
     "WebAppMain.java":       f"{JAVA_SRC}/hudson/WebAppMain.java",
@@ -123,13 +123,10 @@ def run_evaluation(max_candidates: int = 20):
         print(f"[{i:2d}/{len(candidates_to_run)}] {fname}:{line} — {rule}")
         print(f"       Ground truth: {gt_action} | safe_to_remove={is_safe}")
 
+        # evaluation always runs on ground-truth candidates regardless of overrides
         overridden, reason = is_overridden(candidate["file"])
         if overridden:
-            print(f"       SKIPPED (override): {reason}\n")
-            results.append({"fname": fname, "line": line, "rule": rule,
-                            "gt": gt_action, "predicted": "SKIP", "correct": None,
-                            "confidence": 0, "escalated": False, "skipped": True})
-            continue
+            print(f"       NOTE: override exists ({reason}) — running anyway for ground-truth eval")
 
         try:
             retrieval_verdict = retrieve_context(candidate)
@@ -157,6 +154,9 @@ def run_evaluation(max_candidates: int = 20):
                 "confidence": confidence, "escalated": escalated,
                 "verdict": retrieval_verdict["verdict"],
                 "diff": rec.get("suggested_diff", ""),
+                "rationale": rec.get("rationale", ""),
+                "action_statement": rec.get("action_statement", ""),
+                "escalation_reason": rec.get("escalation_reason", ""),
             })
 
         except Exception as e:

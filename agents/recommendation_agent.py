@@ -14,6 +14,16 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 JENKINS_ROOT = Path(__file__).parent.parent / "jenkins"
 ESCALATION_CONFIDENCE_THRESHOLD = 0.6
+_CANONICAL_ACTIONS = {"REMOVE", "REFACTOR", "DEPRECATE", "KEEP"}
+
+
+def _normalize_action(raw: str) -> str:
+    """Map LLM variants like DEPRECATE_METHOD or REMOVE_FIELD to canonical form."""
+    upper = str(raw).upper()
+    for canon in _CANONICAL_ACTIONS:
+        if upper.startswith(canon):
+            return canon
+    return "KEEP"
 
 
 def _get_llm() -> LLM:
@@ -27,15 +37,21 @@ def _get_llm() -> LLM:
 def _compute_confidence(winner: dict, retrieval_verdict: dict) -> float:
     score = winner.get("overall_score", 0.5)
 
-    verdict_adjustment = {"SAFE": 0.1, "UNCERTAIN": -0.1, "RISKY": -0.25}
+    # UNCERTAIN penalty increased: "I couldn't find evidence" deserves stronger discount
+    verdict_adjustment = {"SAFE": 0.1, "UNCERTAIN": -0.2, "RISKY": -0.25}
     confidence_adjustment = {"HIGH": 0.05, "MEDIUM": 0.0, "LOW": -0.1}
 
     score += verdict_adjustment.get(retrieval_verdict.get("verdict", "UNCERTAIN"), 0)
     score += confidence_adjustment.get(retrieval_verdict.get("confidence", "LOW"), 0)
 
-    # REMOVE is always high-stakes — cap confidence
-    if winner.get("action") == "REMOVE":
-        score = min(score, 0.65)
+    action = winner.get("action", "")
+    # Cap each action type to reflect its inherent risk profile
+    # REMOVE: high-stakes irreversible change
+    # REFACTOR: lower risk but still a code change requiring review
+    # KEEP: "do nothing" is a decision under uncertainty, not a free pass to be certain
+    caps = {"REMOVE": 0.65, "REFACTOR": 0.75, "KEEP": 0.60}
+    if action in caps:
+        score = min(score, caps[action])
 
     return round(max(0.0, min(1.0, score)), 2)
 
@@ -140,8 +156,9 @@ def run(candidate: dict, retrieval_verdict: dict, winner: dict) -> dict:
     escalate, escalation_reason = _should_escalate(confidence, winner, retrieval_verdict)
     source_context = _read_source_lines(candidate["file"], candidate["line"])
 
-    # generate diff programmatically for mechanical actions — don't ask the LLM
-    action = winner.get("action", "KEEP")
+    # normalize winner action before passing to diff generator and LLM task
+    action = _normalize_action(winner.get("action", "KEEP"))
+    winner = {**winner, "action": action}  # ensure task description sees normalized value
     programmatic_diff = generate_diff(
         candidate["file"], candidate["line"], action, candidate.get("rule", "")
     )
@@ -160,6 +177,7 @@ def run(candidate: dict, retrieval_verdict: dict, winner: dict) -> dict:
     else:
         result = {"action": action, "rationale": raw}
 
+    result["action"] = _normalize_action(result.get("action", action))
     result["confidence"] = confidence
     result["escalate"] = escalate
     result["escalation_reason"] = escalation_reason

@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Code Cleanup Agent — Evaluation Report</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+         background:#0f172a; color:#e2e8f0; line-height:1.5; padding:2rem; }
+  h1 { font-size:1.5rem; font-weight:700; color:#f1f5f9; }
+  h2 { font-size:1rem; font-weight:600; color:#94a3b8; text-transform:uppercase;
+        letter-spacing:.05em; margin-bottom:.75rem; }
+  .subtitle { color:#64748b; font-size:.85rem; margin-top:.25rem; }
+  .header { margin-bottom:2rem; border-bottom:1px solid #1e293b; padding-bottom:1.25rem; }
+  .grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+           margin-bottom:2rem; }
+  .card { background:#1e293b; border:1px solid #334155; border-radius:.75rem; padding:1.25rem; }
+  .card .label { font-size:.75rem; color:#64748b; text-transform:uppercase;
+                  letter-spacing:.05em; margin-bottom:.25rem; }
+  .card .value { font-size:2rem; font-weight:700; color:#f1f5f9; }
+  .card .sub { font-size:.8rem; color:#94a3b8; margin-top:.25rem; }
+  .section { margin-bottom:2rem; }
+  .charts { display:grid; gap:1rem; grid-template-columns:1fr 1fr; margin-bottom:2rem; }
+  .bar-row { display:flex; align-items:center; gap:.5rem; margin-bottom:.5rem; font-size:.85rem; }
+  .bar-label { width:90px; text-align:right; color:#94a3b8; flex-shrink:0; }
+  .bar-track { flex:1; background:#334155; border-radius:4px; height:10px; overflow:hidden; }
+  .bar-fill  { height:100%; border-radius:4px; }
+  .bar-val   { width:40px; color:#cbd5e1; font-size:.8rem; }
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  thead th { background:#1e293b; color:#94a3b8; font-weight:600; padding:.6rem .75rem;
+              text-align:left; position:sticky; top:0; border-bottom:1px solid #334155; }
+  tbody tr { border-bottom:1px solid #1e293b; cursor:pointer; }
+  tbody tr:hover { background:#1e293b; }
+  tbody tr.incorrect { background:#1c0a0a; }
+  tbody tr.incorrect:hover { background:#2d0f0f; }
+  td { padding:.55rem .75rem; vertical-align:middle; }
+  .status-correct  { color:#22c55e; font-weight:700; font-size:1rem; }
+  .status-incorrect { color:#ef4444; font-weight:700; font-size:1rem; }
+  .conf-wrap { display:flex; align-items:center; gap:.5rem; }
+  .conf-bar { width:60px; height:6px; border-radius:3px; background:#334155; flex-shrink:0; }
+  .conf-fill { height:100%; border-radius:3px; }
+  .diff-row td { padding:0; }
+  .diff-panel { display:none; background:#020617; border-top:1px solid #1e293b;
+                 padding:1rem 1.25rem; }
+  .diff-panel.open { display:block; }
+  pre.diff { font-family:'Fira Code',Menlo,monospace; font-size:.78rem; line-height:1.6;
+              overflow-x:auto; white-space:pre; }
+  .rationale { color:#94a3b8; font-size:.8rem; margin-top:.75rem; font-style:italic; }
+  .expand-hint { color:#475569; font-size:.7rem; }
+  @media(max-width:768px) { .charts { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Enterprise Code Cleanup Agent — Evaluation Report</h1>
+  <p class="subtitle">CMU Agentic AI Program · Capstone Project · Generated 2026-06-27 12:22</p>
+</div>
+
+<!-- Metric cards -->
+<div class="grid">
+  <div class="card">
+    <div class="label">Accuracy</div>
+    <div class="value" style="color:#22c55e">95%</div>
+    <div class="sub">19 of 20 correct</div>
+  </div>
+  <div class="card">
+    <div class="label">False-Positive Rate</div>
+    <div class="value" style="color:#22c55e">0%</div>
+    <div class="sub">0 plugin-adjacent misses</div>
+  </div>
+  <div class="card">
+    <div class="label">Escalation Rate</div>
+    <div class="value" style="color:#f59e0b">100%</div>
+    <div class="sub">20 flagged for human review</div>
+  </div>
+  <div class="card">
+    <div class="label">Avg Confidence</div>
+    <div class="value" style="color:#3b82f6">0.55</div>
+    <div class="sub">Correct: 0.56 · Wrong: 0.47</div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts">
+  <div class="card">
+    <h2>Action Distribution</h2>
+<div class="bar-row">
+  <div class="bar-label">REMOVE</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:45%;background:#ef4444"></div>
+  </div>
+  <div class="bar-val">9</div>
+</div>
+
+<div class="bar-row">
+  <div class="bar-label">KEEP</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:35%;background:#22c55e"></div>
+  </div>
+  <div class="bar-val">7</div>
+</div>
+
+<div class="bar-row">
+  <div class="bar-label">DEPRECATE</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:15%;background:#f59e0b"></div>
+  </div>
+  <div class="bar-val">3</div>
+</div>
+
+<div class="bar-row">
+  <div class="bar-label">REFACTOR</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:5%;background:#3b82f6"></div>
+  </div>
+  <div class="bar-val">1</div>
+</div>
+  </div>
+  <div class="card">
+    <h2>RAG Verdict Distribution</h2>
+<div class="bar-row">
+  <div class="bar-label">SAFE</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:45%;background:#22c55e"></div>
+  </div>
+  <div class="bar-val">9</div>
+</div>
+
+<div class="bar-row">
+  <div class="bar-label">UNCERTAIN</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:40%;background:#f59e0b"></div>
+  </div>
+  <div class="bar-val">8</div>
+</div>
+
+<div class="bar-row">
+  <div class="bar-label">RISKY</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:15%;background:#ef4444"></div>
+  </div>
+  <div class="bar-val">3</div>
+</div>
+  </div>
+</div>
+
+<!-- Calibration -->
+<div class="card section">
+  <h2>Confidence Calibration</h2>
+  
+<div class="bar-row">
+  <div class="bar-label">Correct predictions</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:56%;background:#22c55e"></div>
+  </div>
+  <div class="bar-val">0.56</div>
+</div>
+
+<div class="bar-row">
+  <div class="bar-label">Wrong predictions</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:47%;background:#ef4444"></div>
+  </div>
+  <div class="bar-val">0.47</div>
+</div>
+
+<div class="bar-row">
+  <div class="bar-label">All predictions</div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:55%;background:#3b82f6"></div>
+  </div>
+  <div class="bar-val">0.55</div>
+</div><p style="font-size:.78rem;color:#64748b;margin-top:.5rem">Well-calibrated: correct predictions should score higher than wrong ones.</p>
+</div>
+
+<!-- Per-candidate table -->
+<div class="card section">
+  <h2>Per-Candidate Results</h2>
+  <p class="expand-hint" style="margin-bottom:.75rem;color:#475569;font-size:.8rem">
+    Click any row to expand the diff and rationale.
+  </p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>File</th>
+        <th>Rule</th>
+        <th>Ground Truth</th>
+        <th>Predicted</th>
+        <th>Confidence</th>
+        <th>RAG Verdict</th>
+        <th>Escalated</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+<tr data-id="0">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">DependencyRunner.java:56</td>
+  <td style="color:#94a3b8;font-size:.78rem">UnusedLocalVariable</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REFACTOR</span></td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:65%;background:#f59e0b"></div></div>
+      <span style="font-size:.8rem;color:#f59e0b">0.65</span>
+    </div>
+  </td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">SAFE</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-0">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/DependencyRunner.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/DependencyRunner.java</span>
+<span style="color:#7dd3fc">@@ -53,7 +53,6 @@</span>
+<span style="color:#d1d5db"> </span>
+<span style="color:#d1d5db">     @Override</span>
+<span style="color:#d1d5db">     public void run() {</span>
+<span style="color:#fca5a5;background:#450a0a">-        try (ACLContext ctx = ACL.as2(ACL.SYSTEM2)) {</span>
+<span style="color:#d1d5db">             Set&lt;AbstractProject&gt; topLevelProjects = new HashSet&lt;&gt;();</span>
+<span style="color:#d1d5db">             // Get all top-level projects</span>
+<span style="color:#d1d5db">             LOGGER.fine(&quot;assembling top level projects&quot;);</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Remove the unused local variable at line 56 in core/src/main/java/hudson/DependencyRunner.java.</div>
+<div class="rationale">Static analysis has flagged the local variable at line 56 as unused, indicating it serves no functional purpose in the current method implementation. The Rule Assurance Guide (RAG) has noted with high confidence that removal of unused local variables is safe, especially since it cannot affect external code as its scope is strictly local. The Critic winner action supports this removal, recognizing </div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: REMOVE actions always require human review</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="1">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">StructuredForm.java:70</td>
+  <td style="color:#94a3b8;font-size:.78rem">UnusedLocalVariable</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:65%;background:#f59e0b"></div></div>
+      <span style="font-size:.8rem;color:#f59e0b">0.65</span>
+    </div>
+  </td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">SAFE</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-1">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/StructuredForm.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/StructuredForm.java</span>
+<span style="color:#7dd3fc">@@ -67,7 +67,6 @@</span>
+<span style="color:#d1d5db">         return switch (v) {</span>
+<span style="color:#d1d5db">             case null -&gt; Collections.emptyList();</span>
+<span style="color:#d1d5db">             case JSONObject jsonObject -&gt; List.of(jsonObject);</span>
+<span style="color:#fca5a5;background:#450a0a">-            case JSONArray objects -&gt; (List) v;</span>
+<span style="color:#d1d5db">             default -&gt; throw new IllegalArgumentException();</span>
+<span style="color:#d1d5db">         };</span>
+<span style="color:#d1d5db"> </span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Remove the unused local variable at line 70 in core/src/main/java/hudson/StructuredForm.java.</div>
+<div class="rationale">The static analysis tool identified an unused local variable at line 70, which is verified as safe to remove because it is private to the method. The RAG&#x27;s high-confidence &#x27;SAFE&#x27; verdict confirms that removing this line does not affect any external logic or interfaces. Since the action involves removing redundant code, it simplifies the codebase without introducing risks.</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: REMOVE actions always require human review</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="2">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">Proc.java:183</td>
+  <td style="color:#94a3b8;font-size:.78rem">UnusedPrivateField</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:65%;background:#f59e0b"></div></div>
+      <span style="font-size:.8rem;color:#f59e0b">0.65</span>
+    </div>
+  </td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">SAFE</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-2">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/Proc.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/Proc.java</span>
+<span style="color:#7dd3fc">@@ -180,7 +180,6 @@</span>
+<span style="color:#d1d5db">         private final Thread copier, copier2;</span>
+<span style="color:#d1d5db">         private final OutputStream out;</span>
+<span style="color:#d1d5db">         private final EnvVars cookie;</span>
+<span style="color:#fca5a5;background:#450a0a">-        private final String name;</span>
+<span style="color:#d1d5db"> </span>
+<span style="color:#d1d5db">         private final InputStream stdout, stderr;</span>
+<span style="color:#d1d5db">         private final OutputStream stdin;</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Remove the unused private field &#x27;name&#x27; at line 183 in Proc.java.</div>
+<div class="rationale">The static analysis has identified an unused private field &#x27;name&#x27; at line 183 in the &#x27;LocalProc&#x27; class in Proc.java. Since private fields cannot be accessed outside their class, and the RAG verdict confirms the removal is safe with high confidence, it is efficient and appropriate to eliminate this unused field to clean up the code. Maintaining unused fields can clutter the code and lead to mainten</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: REMOVE actions always require human review</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="3">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">WebAppMain.java:134</td>
+  <td style="color:#94a3b8;font-size:.78rem">UnusedPrivateField</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:65%;background:#f59e0b"></div></div>
+      <span style="font-size:.8rem;color:#f59e0b">0.65</span>
+    </div>
+  </td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">SAFE</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-3">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/WebAppMain.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/WebAppMain.java</span>
+<span style="color:#7dd3fc">@@ -131,7 +131,6 @@</span>
+<span style="color:#d1d5db">     }</span>
+<span style="color:#d1d5db"> </span>
+<span style="color:#d1d5db">     private static final String APP = &quot;app&quot;;</span>
+<span style="color:#fca5a5;background:#450a0a">-    private boolean terminated;</span>
+<span style="color:#d1d5db">     private Thread initThread;</span>
+<span style="color:#d1d5db"> </span>
+<span style="color:#d1d5db">     /**</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Remove the unused private field &#x27;terminated&#x27; at line 134 in WebAppMain.java.</div>
+<div class="rationale">The static analysis identified the field &#x27;terminated&#x27; as an unused private field, which means it is not referenced within its declaring class. The RAG system has assessed this action as SAFE with a high confidence level, indicating no known impact or dependencies affected by its removal. Given that the field is private and unused, its removal poses minimal risk.</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: REMOVE actions always require human review</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="4">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">FilePath.java:2738</td>
+  <td style="color:#94a3b8;font-size:.78rem">UnusedPrivateMethod</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:65%;background:#f59e0b"></div></div>
+      <span style="font-size:.8rem;color:#f59e0b">0.65</span>
+    </div>
+  </td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">SAFE</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-4">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/FilePath.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/FilePath.java</span>
+<span style="color:#7dd3fc">@@ -2735,9 +2735,6 @@</span>
+<span style="color:#d1d5db">      * A pointless function to work around what appears to be a HotSpot problem. See JENKINS-5756 and bug 6933067</span>
+<span style="color:#d1d5db">      * on BugParade for more details.</span>
+<span style="color:#d1d5db">      */</span>
+<span style="color:#fca5a5;background:#450a0a">-    private void _syncIO() throws InterruptedException {</span>
+<span style="color:#fca5a5;background:#450a0a">-        channel.syncLocalIO();</span>
+<span style="color:#fca5a5;background:#450a0a">-    }</span>
+<span style="color:#d1d5db"> </span>
+<span style="color:#d1d5db">     /**</span>
+<span style="color:#d1d5db">      * Remoting interface used for {@link FilePath#copyRecursiveTo(String, FilePath)}.</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Remove the unused private method &#x27;_syncIO&#x27; at line 2738 in core/src/main/java/hudson/FilePath.java.</div>
+<div class="rationale">The static analysis has identified the method &#x27;_syncIO&#x27; as unused, and the RAG verdict supports this with high confidence, classifying it as dead code and safe for removal. The Critic concurred with this assessment, recommending deletion due to the method not being invoked within its class or referenced anywhere else in the codebase. However, due to the general practice of having human review for </div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: REMOVE actions always require human review</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="5">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">CLICommand.java:281</td>
+  <td style="color:#94a3b8;font-size:.78rem">UnusedLocalVariable</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:65%;background:#f59e0b"></div></div>
+      <span style="font-size:.8rem;color:#f59e0b">0.65</span>
+    </div>
+  </td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">SAFE</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-5">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/cli/CLICommand.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/cli/CLICommand.java</span>
+<span style="color:#7dd3fc">@@ -278,7 +278,6 @@</span>
+<span style="color:#d1d5db">     protected int handleException(Throwable e, CLIContext context, CmdLineParser p) {</span>
+<span style="color:#d1d5db">         int exitCode;</span>
+<span style="color:#d1d5db">         switch (e) {</span>
+<span style="color:#fca5a5;background:#450a0a">-            case CmdLineException cmdLineException -&gt; {</span>
+<span style="color:#d1d5db">                 exitCode = 2;</span>
+<span style="color:#d1d5db">                 printError(e.getMessage());</span>
+<span style="color:#d1d5db">                 printUsage(stderr, p);</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Remove the unused local variable declared at line 281 in core/src/main/java/hudson/cli/CLICommand.java.</div>
+<div class="rationale">The static analysis identified an UnusedLocalVariable at line 281, which is confirmed by the context that this variable is not being referenced anywhere in the code. The RAG verdict with high confidence and the Critic&#x27;s recommendation also support the action of removal, indicating it is pure dead code with no external dependencies. Thus, its removal will not affect the functionality of the code.</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: REMOVE actions always require human review</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="6">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">CLICommand.java:286</td>
+  <td style="color:#94a3b8;font-size:.78rem">UnusedLocalVariable</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:65%;background:#f59e0b"></div></div>
+      <span style="font-size:.8rem;color:#f59e0b">0.65</span>
+    </div>
+  </td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">SAFE</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-6">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/cli/CLICommand.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/cli/CLICommand.java</span>
+<span style="color:#7dd3fc">@@ -283,7 +283,6 @@</span>
+<span style="color:#d1d5db">                 printError(e.getMessage());</span>
+<span style="color:#d1d5db">                 printUsage(stderr, p);</span>
+<span style="color:#d1d5db">             }</span>
+<span style="color:#fca5a5;background:#450a0a">-            case IllegalArgumentException illegalArgumentException -&gt; {</span>
+<span style="color:#d1d5db">                 exitCode = 3;</span>
+<span style="color:#d1d5db">                 printError(e.getMessage());</span>
+<span style="color:#d1d5db">             }</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Remove the unused local variable &#x27;illegalArgumentException&#x27; at line 286 in CLICommand.java.</div>
+<div class="rationale">Static analysis has detected that the local variable &#x27;illegalArgumentException&#x27; is unused in its context, lining up with the RAG verdict of SAFE for removal. The Critic&#x27;s recommendation to remove this variable is based on its finding that the variable is not referenced anywhere else, implying no side effects and confirming its removal as safe. While the confidence level is not maximally high, the </div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: REMOVE actions always require human review</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="7">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">CLICommand.java:290</td>
+  <td style="color:#94a3b8;font-size:.78rem">UnusedLocalVariable</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:65%;background:#f59e0b"></div></div>
+      <span style="font-size:.8rem;color:#f59e0b">0.65</span>
+    </div>
+  </td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">SAFE</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-7">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/cli/CLICommand.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/cli/CLICommand.java</span>
+<span style="color:#7dd3fc">@@ -287,7 +287,6 @@</span>
+<span style="color:#d1d5db">                 exitCode = 3;</span>
+<span style="color:#d1d5db">                 printError(e.getMessage());</span>
+<span style="color:#d1d5db">             }</span>
+<span style="color:#fca5a5;background:#450a0a">-            case IllegalStateException illegalStateException -&gt; {</span>
+<span style="color:#d1d5db">                 exitCode = 4;</span>
+<span style="color:#d1d5db">                 printError(e.getMessage());</span>
+<span style="color:#d1d5db">             }</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Remove the unused local variable &#x27;illegalStateException&#x27; from CLICommand.java at line 290.</div>
+<div class="rationale">The static analysis tool identified an unused local variable &#x27;illegalStateException&#x27; at line 290 in CLICommand.java. The RAG system deemed this change SAFE with a high confidence level because the variable is private and not referenced elsewhere, ensuring its removal will not affect other code segments. Critic&#x27;s analysis convergence on the &#x27;REMOVE&#x27; action further supports this by noting that simil</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: REMOVE actions always require human review</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="8">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">WebAppMain.java:406</td>
+  <td style="color:#94a3b8;font-size:.78rem">UnusedLocalVariable</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REMOVE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:65%;background:#f59e0b"></div></div>
+      <span style="font-size:.8rem;color:#f59e0b">0.65</span>
+    </div>
+  </td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">SAFE</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-8">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/WebAppMain.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/WebAppMain.java</span>
+<span style="color:#7dd3fc">@@ -403,7 +403,6 @@</span>
+<span style="color:#d1d5db"> </span>
+<span style="color:#d1d5db">     @Override</span>
+<span style="color:#d1d5db">     public void contextDestroyed(ServletContextEvent event) {</span>
+<span style="color:#fca5a5;background:#450a0a">-        try (ACLContext old = ACL.as2(ACL.SYSTEM2)) {</span>
+<span style="color:#d1d5db">             Jenkins instance = Jenkins.getInstanceOrNull();</span>
+<span style="color:#d1d5db">             try {</span>
+<span style="color:#d1d5db">                 if (instance != null) {</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Remove the unused local variable &#x27;old&#x27; on line 406 in &#x27;core/src/main/java/hudson/WebAppMain.java&#x27;.</div>
+<div class="rationale">The unused local variable &#x27;old&#x27; at line 406 is flagged by static analysis and identified as dead code. Given that it is private or local by definition, its removal will not affect external references or program functionality, as confirmed by the RAG analysis with a high confidence rating of SAFE. Eliminating this variable will enhance code clarity and maintainability without introducing risks.</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: REMOVE actions always require human review</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="9" class='incorrect'>
+  <td><span class="status-incorrect">✗</span></td>
+  <td style="font-family:monospace;font-size:.8rem">BuildCommand.java:204</td>
+  <td style="color:#94a3b8;font-size:.78rem">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REFACTOR</span></td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:47%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.47</span>
+    </div>
+  </td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">UNCERTAIN</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-9">
+      <pre class="diff"><span style="color:#94a3b8;font-style:italic;white-space:pre-wrap">197:                                  i++;
+198:                                  Thread.sleep(retryInterval);
+199:                              }
+200:                          }
+201:                      }
+202:                      f.get();    // wait for the completion
+203:                      stdout.println(&quot;Completed &quot; + b.getFullDisplayName() + &quot; : &quot; + b.getResult());
+204:                      // Note: b.getResult() may return null, handle accordingly.
+204:                      return b.getResult() != null ? b.getResult().ordinal : -1;
+205:                  } catch (InterruptedException e) {
+206:                      if (follow) {
+207:                          return 125;</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Add documentation to clarify potential null return at line 204 in BuildCommand.java.</div>
+<div class="rationale">The static analysis finding suggests a null return possibility at line 204, and the RAG verdict is uncertain about the impact of changes due to the dynamic functionalities involved. Critic recommends maintaining the current implementation but enhancing documentation to explicitly highlight the nullability, minimizing risk by avoiding refactoring in an uncertain context.</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: Confidence 0.47 is below threshold 0.6</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="10">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">CrontabParser.java:382</td>
+  <td style="color:#94a3b8;font-size:.78rem">SF_SWITCH_NO_DEFAULT</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REFACTOR</span></td>
+  <td><span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">REFACTOR</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:50%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.50</span>
+    </div>
+  </td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">UNCERTAIN</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-10">
+      <pre class="diff"><span style="color:#94a3b8;font-style:italic;white-space:pre-wrap">
+--- CrontabParser.java (original)
++++ CrontabParser.java (modified)
+@@ -382,6 +382,9 @@
+ switch ( getInterpreter().adaptivePredict(_input,7,_ctx) ) {
+ case 1:
+ enterOuterAlt(_localctx, 1);
++ default:
++ // Log an error or throw an exception for unexpected cases
++ throw new IllegalArgumentException(&quot;Unexpected value: &quot; + _input);
+ }
+</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Refactor the switch statement at line 382 in CrontabParser.java to include a default case.</div>
+<div class="rationale">The static analysis finding indicates a missing default case in the switch statement, which can lead to unhandled situations if an unexpected value is encountered. The Critic suggests adding a default to enhance error handling by either logging the error or throwing an exception, which aligns with best practices for robustness. However, as this file is generated, such changes risk being overwritte</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: Insufficient evidence — conflicting or missing documentation</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="11">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">ExtensionComponent.java:42</td>
+  <td style="color:#94a3b8;font-size:.78rem">EQ_COMPARETO_USE_OBJECT_EQUALS</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:50%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.50</span>
+    </div>
+  </td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">RISKY</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-11">
+      <pre class="diff"><span style="color:#94a3b8;font-style:italic;white-space:pre-wrap">No code change required. Perform a thorough review of the documentation related to the `compareTo` method to ensure it clearly states any intentional differences with `equals` and the rationale behind them.</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Preserve the existing implementation of `compareTo` in `ExtensionComponent.java` at line 42 and conduct a comprehensive documentation review of its behavior.</div>
+<div class="rationale">The static analysis rule EQ_COMPARETO_USE_OBJECT_EQUALS suggests a potential mismatch in the behavior of `compareTo` and `equals`, which can lead to inconsistencies. However, the RAG context highlights that `ExtensionComponent` plays a vital role in Jenkins&#x27; extension discovery process, making any operational change risky. By maintaining the current implementation and focusing on documentation, we</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: RAG verdict is RISKY — candidate touches plugin infrastructure</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="12">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">PluginWrapper.java:111</td>
+  <td style="color:#94a3b8;font-size:.78rem">EQ_COMPARETO_USE_OBJECT_EQUALS</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:47%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.47</span>
+    </div>
+  </td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">UNCERTAIN</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-12">
+      <pre class="diff"><em style="color:#6b7280">No code change — recommendation is KEEP.</em></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Retain the current implementation of the compareTo method in the PluginWrapper class at line 111.</div>
+<div class="rationale">The static analysis finding suggests that the compareTo method should align with equals for consistency. However, the RAG context and Critic Winner highlight the critical nature of PluginWrapper&#x27;s functionality within Jenkins, indicative of the possibility that the divergent behavior may be deliberate and necessary for business logic. Therefore, making changes without sufficient documentation and </div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: Insufficient evidence — conflicting or missing documentation</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="13">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">Functions.java:1331</td>
+  <td style="color:#94a3b8;font-size:.78rem">EQ_COMPARETO_USE_OBJECT_EQUALS</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:50%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.50</span>
+    </div>
+  </td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">UNCERTAIN</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-13">
+      <pre class="diff"><em style="color:#6b7280">No code change — recommendation is KEEP.</em></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Keep the current implementation of the compareTo method in the Tag class at line 1331 and document the rationale for using it over Object.equals, if intentional.</div>
+<div class="rationale">The static analysis warning suggests that the compareTo method might not be appropriately complemented by implementing Object.equals. However, the lack of specific documentation and context for the Tag class makes it unclear whether using compareTo is intentional for sorting purposes or aligned with expected equality semantics. The RAG verdict and Critic suggest maintaining the current implementat</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: Confidence 0.5 is below threshold 0.6</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="14">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">MarkupText.java:54</td>
+  <td style="color:#94a3b8;font-size:.78rem">EQ_COMPARETO_USE_OBJECT_EQUALS</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:43%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.43</span>
+    </div>
+  </td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">UNCERTAIN</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-14">
+      <pre class="diff"><span style="color:#94a3b8;font-style:italic;white-space:pre-wrap">/*
+ * The compareTo method is used here instead of Object.equals.
+ * This decision is based on the specific design considerations of the Tag class.
+ * Changing this may affect the ordering logic essential for List operations.
+ */</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Preserve the current implementation of the compareTo method in the Tag class at line 54 and add comments explaining its use.</div>
+<div class="rationale">The static analysis warning suggests that compareTo might not be the appropriate method to use compared to Object.equals. However, due to uncertain retrieval findings and the core nature of the component, altering the implementation could introduce unexpected behaviors. Therefore, maintaining the current setup with added explanatory comments will help future developers understand the rationale beh</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: Insufficient evidence — conflicting or missing documentation</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="15">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">FilePath.java:3839</td>
+  <td style="color:#94a3b8;font-size:.78rem">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">DEPRECATE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:37%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.37</span>
+    </div>
+  </td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">UNCERTAIN</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-15">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/FilePath.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/FilePath.java</span>
+<span style="color:#7dd3fc">@@ -3836,6 +3836,7 @@</span>
+<span style="color:#d1d5db">                 Path directChild = this.getDirectChild(currentFilePath, remainingPath);</span>
+<span style="color:#d1d5db">                 Path childUsingFullPath = currentFilePath.resolve(remainingPath);</span>
+<span style="color:#d1d5db">                 String childUsingFullPathAbs = childUsingFullPath.toAbsolutePath().toString();</span>
+<span style="color:#86efac;background:#052e16">+                @Deprecated</span>
+<span style="color:#d1d5db">                 String directChildAbs = directChild.toAbsolutePath().toString();</span>
+<span style="color:#d1d5db"> </span>
+<span style="color:#d1d5db">                 if (childUsingFullPathAbs.length() == directChildAbs.length()) {</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Deprecate the logic at line 3839 in `FilePath.java` where potential null issues have been identified.</div>
+<div class="rationale">The static analysis flagged a potential null path issue at line 3839, but the relevant documentation and extension point data are insufficient to precisely determine its impact. Given the low confidence RAG verdict and the uncertain risk, deprecation is a prudent path to communicate to developers about the potential issue while maintaining backwards compatibility. This approach allows further anal</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: Insufficient evidence — conflicting or missing documentation</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="16">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">AbstractBuild.java:842</td>
+  <td style="color:#94a3b8;font-size:.78rem">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">DEPRECATE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:47%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.47</span>
+    </div>
+  </td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">UNCERTAIN</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-16">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/model/AbstractBuild.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/model/AbstractBuild.java</span>
+<span style="color:#7dd3fc">@@ -839,6 +839,7 @@</span>
+<span style="color:#d1d5db"> </span>
+<span style="color:#d1d5db">         private void reportBrokenChannel(BuildListener listener) throws IOException {</span>
+<span style="color:#d1d5db">             final Node node = getCurrentNode();</span>
+<span style="color:#86efac;background:#052e16">+            @Deprecated</span>
+<span style="color:#d1d5db">             listener.hyperlink(&quot;/&quot; + node.toComputer().getUrl() + &quot;log&quot;, &quot;Agent went offline during the build&quot;);</span>
+<span style="color:#d1d5db">             listener.getLogger().println();</span>
+<span style="color:#d1d5db">             final OfflineCause offlineCause = node.toComputer().getOfflineCause();</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Deprecate the method using `node.toComputer()` in `reportBrokenChannel` of `AbstractBuild.java` to indicate that this use is discouraged due to potential null paths.</div>
+<div class="rationale">The static analysis warning indicates potential null dereferencing, which can cause runtime errors, thereby affecting the stability of the system. The decision to deprecate stems from the uncertainty of the `AbstractBuild.java` context within Jenkins. By marking this part of the method as deprecated, we alert developers to prefer safer alternatives while minimizing the risk of introducing errors t</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: Confidence 0.47 is below threshold 0.6</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="17">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">Computer.java:1508</td>
+  <td style="color:#94a3b8;font-size:.78rem">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:56%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.57</span>
+    </div>
+  </td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">RISKY</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-17">
+      <pre class="diff"><span style="color:#94a3b8;font-style:italic;white-space:pre-wrap">
++ // Adding a log statement to monitor potential null values
++ if (result == null) {
++     LOGGER.warn(&quot;Null result encountered when setting offline cause for node: &quot; + node.getDisplayName());
++ }
++ result.setTemporaryOfflineCause(offlineCause);
+</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Add logging and a comment at line 1508 to monitor occurrences of null values when setting OfflineCause.</div>
+<div class="rationale">The static analysis finding indicates a potential null reference issue at line 1508, which can lead to runtime exceptions when manipulating nodes in Jenkins, a critical component of its infrastructure. Given the high-risk context identified by the RAG, with `Computer` being integral to plugin behavior, the Critic&#x27;s suggestion to maintain the code and add logging is prudent. This approach avoids di</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: RAG verdict is RISKY — candidate touches plugin infrastructure</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="18">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">Descriptor.java:732</td>
+  <td style="color:#94a3b8;font-size:.78rem">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">DEPRECATE</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:50%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.50</span>
+    </div>
+  </td>
+  <td><span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">RISKY</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-18">
+      <pre class="diff"><span style="color:#94a3b8">--- a/core/src/main/java/hudson/model/Descriptor.java</span>
+<span style="color:#94a3b8">+++ b/core/src/main/java/hudson/model/Descriptor.java</span>
+<span style="color:#7dd3fc">@@ -729,6 +729,7 @@</span>
+<span style="color:#d1d5db">                 if (isApplicable(targetTypeErasure, json)) {</span>
+<span style="color:#d1d5db">                     LOGGER.log(Level.FINE, &quot;switching to newInstance {0} {1}&quot;, new Object[] {targetTypeErasure.getName(), json});</span>
+<span style="color:#d1d5db">                     try {</span>
+<span style="color:#86efac;background:#052e16">+                        @Deprecated</span>
+<span style="color:#d1d5db">                         return Jenkins.get().getDescriptor(targetTypeErasure).newInstance(Stapler.getCurrentRequest2(), json);</span>
+<span style="color:#d1d5db">                     } catch (Exception x) {</span>
+<span style="color:#d1d5db">                         LOGGER.log(Level.WARNING, &quot;falling back to default instantiation &quot; + targetTypeErasure.getName() + &quot; &quot; + json, x);</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Deprecate the `newInstance` method in the `Descriptor` class at line 732 to mitigate risks in plugin infrastructure.</div>
+<div class="rationale">The static analysis flags a medium-severity risk of null return from `Jenkins.get().getDescriptor(targetTypeErasure)`, which could disrupt plugin behavior by returning unexpected results. The RAG verdict deems this candidate risky, particularly because `Descriptor` is integral to Jenkins&#x27; plugin system, implicating widespread potential impact. Therefore, deprecating the method offers a prudent ini</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: RAG verdict is RISKY — candidate touches plugin infrastructure</div>
+    </div>
+  </td>
+</tr>
+
+<tr data-id="19">
+  <td><span class="status-correct">✓</span></td>
+  <td style="font-family:monospace;font-size:.8rem">UpdateSite.java:1090</td>
+  <td style="color:#94a3b8;font-size:.78rem">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</td>
+  <td><span style="background:#334155;color:#e2e8f0;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td><span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">KEEP</span></td>
+  <td>
+    <div class="conf-wrap">
+      <div class="conf-bar"><div class="conf-fill" style="width:40%;background:#ef4444"></div></div>
+      <span style="font-size:.8rem;color:#ef4444">0.40</span>
+    </div>
+  </td>
+  <td><span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">UNCERTAIN</span></td>
+  <td><span style="background:#854d0e;color:#fef08a;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;white-space:nowrap">Escalated</span></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <div class="diff-panel" id="diff-19">
+      <pre class="diff"><span style="color:#94a3b8;font-style:italic;white-space:pre-wrap">
+@@ -1088,6 +1088,10 @@
+ case CORE:
+ VersionNumber current = Jenkins.getVersion();
+ return isRelevantToVersion(current);
++// WARNING: &#x27;current&#x27; may be null, ensure to handle null cases
+ case PLUGIN:
+ // check whether plugin is installed
+ PluginWrapper plugin = Jenkins.get().getPluginManager().getPlugin(this.component);
+</span></pre>
+      <div style="color:#e2e8f0;font-size:.82rem;margin-bottom:.5rem">Document the potential for null returns in the method isRelevant() located in the UpdateSite.java file at line 1090.</div>
+<div class="rationale">The static analysis flagged a potential null return issue that could lead to a NullPointerException at line 1090. The RAG verdict is uncertain with low confidence due to insufficient contextual evidence, making a cautious approach advisable. The CRITIC suggests retaining the current behavior but documenting the potential issue as a way to alert future maintainers and avoid disruptions in the syste</div>
+<div style="color:#fbbf24;font-size:.78rem;margin-top:.4rem">Escalated: Insufficient evidence — conflicting or missing documentation</div>
+    </div>
+  </td>
+</tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('tr[data-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      const panel = document.getElementById('diff-' + row.dataset.id);
+      if (panel) panel.classList.toggle('open');
+    });
+  });
+</script>
+</body>
+</html>

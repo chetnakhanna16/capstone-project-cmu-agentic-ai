@@ -54,13 +54,14 @@ Tested against the Jenkins CI/CD platform (`jenkinsci/jenkins`) — 500k+ lines 
 
 | Metric | Score |
 |--------|-------|
-| Accuracy | 88% |
+| Accuracy | 95% |
 | False-positive rate | 0% |
-| Escalation rate | 94% |
-| Avg confidence (correct) | 0.62 |
-| Avg confidence (wrong) | 0.50 |
+| Escalation rate | 100% |
+| Avg confidence (correct) | 0.56 |
+| Avg confidence (wrong) | 0.47 |
 
 Zero false positives — the system never recommended removing plugin-adjacent code.
+Calibrated: correct predictions consistently score higher confidence than wrong ones.
 
 ### Test Module (169 candidates available)
 
