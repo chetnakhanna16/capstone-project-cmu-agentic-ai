@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env")
 
-from tools.static_analysis import get_ranked_candidates
+from tools.static_analysis import get_ranked_candidates, run_jdeps
 from tools.memory_client import save_decision, recall_decision, is_overridden, get_rule_pattern, get_summary
 from agents.context_retrieval_agent import run as retrieve_context
 from agents.thought_generator_agent import run as generate_branches
@@ -36,14 +36,15 @@ _DEAD_CODE_RULES = {
 }
 
 
-def run_pipeline(module: str = "core", max_candidates: int = 5, mode: str = "diverse") -> list[dict]:
+def run_pipeline(module: str = "core", max_candidates: int = 5, mode: str = "diverse",
+                 src_subpath: str = "src/main/java") -> list[dict]:
     print(f"\n{'='*60}")
-    print(f"PIPELINE START — module: {module}, candidates: {max_candidates}, mode: {mode}")
+    print(f"PIPELINE START — module: {module}, src: {src_subpath}, candidates: {max_candidates}, mode: {mode}")
     print(f"{'='*60}\n")
 
     # Phase 2: get ranked candidates
     print("[Phase 2] Running static analysis...")
-    all_candidates = get_ranked_candidates(module)
+    all_candidates = get_ranked_candidates(module, src_subpath)
 
     if mode == "dead-code":
         pool = [c for c in all_candidates if c.rule in _DEAD_CODE_RULES]
@@ -187,5 +188,8 @@ if __name__ == "__main__":
     parser.add_argument("--candidates", type=int, default=5, help="Max candidates to process (default: 5)")
     parser.add_argument("--mode", choices=["diverse", "dead-code"], default="diverse",
                         help="diverse: one candidate per rule; dead-code: focus on unused fields/vars/methods")
+    parser.add_argument("--src-subpath", default="src/main/java",
+                        help="Source subdirectory to scan (default: src/main/java; use src/test/java for test modules)")
     args = parser.parse_args()
-    run_pipeline(module=args.module, max_candidates=args.candidates, mode=args.mode)
+    run_pipeline(module=args.module, max_candidates=args.candidates, mode=args.mode,
+                 src_subpath=args.src_subpath)

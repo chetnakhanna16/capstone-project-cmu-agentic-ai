@@ -48,7 +48,9 @@ Tested against the Jenkins CI/CD platform (`jenkinsci/jenkins`) — 500k+ lines 
 
 ---
 
-## Evaluation Results (20 candidates)
+## Evaluation Results
+
+### Core Module (20 candidates, ground-truth labeled)
 
 | Metric | Score |
 |--------|-------|
@@ -59,6 +61,11 @@ Tested against the Jenkins CI/CD platform (`jenkinsci/jenkins`) — 500k+ lines 
 | Avg confidence (wrong) | 0.50 |
 
 Zero false positives — the system never recommended removing plugin-adjacent code.
+
+### Test Module (169 candidates available)
+
+PMD found 169 dead code violations in `test/src/test/java` across 5 rule types.
+Pipeline processes them identically to production code via `--src-subpath src/test/java`.
 
 ---
 
@@ -129,6 +136,9 @@ cd jenkins && mvn clean install -DskipTests -q && cd ..
 
 # Run dead-code focused mode
 .venv/bin/python3 pipeline.py --module core --candidates 5 --mode dead-code
+
+# Run on the test module (scans test sources)
+.venv/bin/python3 pipeline.py --module test --src-subpath src/test/java --candidates 5 --mode dead-code
 
 # 7. Run evaluation (20 candidates with ground truth)
 .venv/bin/python3 evaluate.py

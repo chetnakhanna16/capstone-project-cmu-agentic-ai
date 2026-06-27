@@ -38,9 +38,9 @@ def _score(severity: str, source: str) -> float:
     return round(base * multiplier, 2)
 
 
-def run_pmd(module: str = "core") -> list[Candidate]:
-    src = JENKINS_ROOT / module / "src/main/java"
-    out = OUTPUT_DIR / f"pmd-{module}.xml"
+def run_pmd(module: str = "core", src_subpath: str = "src/main/java") -> list[Candidate]:
+    src = JENKINS_ROOT / module / src_subpath
+    out = OUTPUT_DIR / f"pmd-{module}-{src_subpath.replace('/', '_')}.xml"
 
     rules = ",".join([
         "category/java/bestpractices.xml/UnusedPrivateField",
@@ -84,7 +84,7 @@ def run_pmd(module: str = "core") -> list[Candidate]:
     return candidates
 
 
-def run_spotbugs(module: str = "core") -> list[Candidate]:
+def run_spotbugs(module: str = "core", src_subpath: str = "src/main/java") -> list[Candidate]:
     module_dir = JENKINS_ROOT / module
     out = module_dir / "target/spotbugsXml.xml"
 
@@ -150,8 +150,8 @@ def run_jdeps(module: str = "core") -> dict:
     return deps
 
 
-def get_ranked_candidates(module: str = "core") -> list[Candidate]:
-    pmd = run_pmd(module)
-    sb = run_spotbugs(module)
+def get_ranked_candidates(module: str = "core", src_subpath: str = "src/main/java") -> list[Candidate]:
+    pmd = run_pmd(module, src_subpath)
+    sb = run_spotbugs(module, src_subpath)
     all_candidates = pmd + sb
     return sorted(all_candidates, key=lambda c: c.score, reverse=True)
